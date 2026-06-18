@@ -1,0 +1,19 @@
+{
+  "title": "Intro call with Harper",
+  "start": "2026-06-18T14:00:00-07:00",
+  "attendees": [
+    {
+      "name": "Dakotah Rice",
+      "email": "dr@example.com",
+      "company": "Harper",
+      "role": "Founder & CEO"
+    }
+  ],
+  "description": "First conversation for an FDE role.",
+  "prior_context": [
+    "Applied for Forward Deployed Engineer role.",
+    "Harper is building an AI-native commercial insurance brokerage.",
+    "They care about AI systems that work inside real operations."
+  ]
+}
+
