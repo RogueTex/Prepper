@@ -37,7 +37,8 @@ That reads the synthetic sample calendar, generates a prep note, and writes the 
 /Users/raghu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -m venv .venv312
 source .venv312/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
+python setup_local.py
+python doctor.py --probe
 python app.py
 ```
 
@@ -153,10 +154,22 @@ curl -X POST http://127.0.0.1:5000/api/sms \
 
 ## CLI
 
+Write or update a local `.env` safely:
+
+```bash
+python setup_local.py
+```
+
+For a no-prompt local default that reads macOS Calendar and writes notifications to `outbox/latest_sms.txt`:
+
+```bash
+python setup_local.py --preset macos-console --force
+```
+
 Run a local setup check:
 
 ```bash
-python doctor.py
+python doctor.py --probe
 ```
 
 Generate a brief from the synthetic sample:

@@ -27,6 +27,7 @@ def main() -> None:
     assert sms_response.get_json()["status"] == "written"
     assert Path("outbox/latest_sms.txt").exists()
 
+    os.environ["CALENDAR_SOURCE"] = "google_api"
     events_response = client.get("/api/events?max_results=1")
     assert events_response.status_code == 500
     assert "Missing Google OAuth client file" in events_response.get_json()["error"]

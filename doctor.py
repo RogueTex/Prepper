@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import argparse
+import json
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+from calendar_client import list_upcoming_events
+from notifier import send_sms
+from prep_brief import generate_brief
 
 
 REQUIRED_BY_PROVIDER = {
@@ -14,6 +20,15 @@ REQUIRED_BY_PROVIDER = {
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Check local Prepper configuration")
+    parser.add_argument("--probe", action="store_true", help="Run a safe calendar, brief, and notifier probe")
+    parser.add_argument(
+        "--send-test-notification",
+        action="store_true",
+        help="Actually send through twilio/macos providers during --probe. Console always writes locally.",
+    )
+    args = parser.parse_args()
+
     load_dotenv()
     failures: list[str] = []
     warnings: list[str] = []
@@ -73,6 +88,44 @@ def main() -> None:
         raise SystemExit(1)
 
     print("\nReady: required local configuration is present.")
+    if args.probe:
+        run_probe(send_test_notification=args.send_test_notification)
+
+
+def run_probe(send_test_notification: bool = False) -> None:
+    print("\nProbe")
+    print("-----")
+
+    events = list_upcoming_events(max_results=1)
+    print(
+        json.dumps(
+            {
+                "calendar_events_seen": len(events),
+                "event_has_title": bool(events and events[0].get("title")),
+                "event_has_start": bool(events and events[0].get("start")),
+            },
+            indent=2,
+        )
+    )
+
+    sample_event = json.loads(Path("sample_event.json").read_text(encoding="utf-8"))
+    brief, source = generate_brief(sample_event)
+    print(json.dumps({"brief_source": source, "brief_chars": len(brief)}, indent=2))
+
+    provider = os.getenv("NOTIFIER_PROVIDER", "console").strip().lower()
+    if provider == "console" or send_test_notification:
+        result = send_sms("Prepper setup probe: notification path is configured.")
+        print(json.dumps({"notification_status": result.get("status"), "notification_to": result.get("to")}, indent=2))
+    else:
+        print(
+            json.dumps(
+                {
+                    "notification_status": "not_sent",
+                    "reason": "Use --send-test-notification to send through twilio/macos.",
+                },
+                indent=2,
+            )
+        )
 
 
 if __name__ == "__main__":
