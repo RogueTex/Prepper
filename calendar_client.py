@@ -75,30 +75,71 @@ def _list_ical_events(max_results: int = 5, lookahead_minutes: int | None = None
 
 
 def _list_sample_events(max_results: int = 5, lookahead_minutes: int | None = None) -> list[dict[str, Any]]:
-    ical_text = Path("sample_calendar.ics").read_text(encoding="utf-8")
+    ical_text = Path(__file__).with_name("sample_calendar.ics").read_text(encoding="utf-8")
     return _filter_upcoming(_parse_ics_events(ical_text), max_results=max_results, lookahead_minutes=lookahead_minutes)
 
 
 def _list_macos_calendar_events(max_results: int = 5, lookahead_minutes: int | None = None) -> list[dict[str, Any]]:
     minutes = lookahead_minutes or 24 * 60
     script = """
+    on twoDigits(valueNumber)
+      set valueText to valueNumber as text
+      if length of valueText is 1 then return "0" & valueText
+      return valueText
+    end twoDigits
+
+    on isoDate(valueDate)
+      set monthNumber to valueDate's month as integer
+      return (valueDate's year as text) & "-" & my twoDigits(monthNumber) & "-" & my twoDigits(valueDate's day) & "T" & my twoDigits(valueDate's hours) & ":" & my twoDigits(valueDate's minutes) & ":" & my twoDigits(valueDate's seconds)
+    end isoDate
+
+    on replaceText(findText, replaceTextValue, sourceText)
+      set oldDelimiters to AppleScript's text item delimiters
+      set AppleScript's text item delimiters to findText
+      set textParts to text items of sourceText
+      set AppleScript's text item delimiters to replaceTextValue
+      set joinedText to textParts as text
+      set AppleScript's text item delimiters to oldDelimiters
+      return joinedText
+    end replaceText
+
+    on safeText(valueText)
+      try
+        set cleanedText to valueText as text
+      on error
+        set cleanedText to ""
+      end try
+      set cleanedText to my replaceText(ASCII character 31, " ", cleanedText)
+      set cleanedText to my replaceText(ASCII character 30, " ", cleanedText)
+      set cleanedText to my replaceText(linefeed, " ", cleanedText)
+      set cleanedText to my replaceText(return, " ", cleanedText)
+      return cleanedText
+    end safeText
+
     on run argv
       set maxCount to item 1 of argv as integer
       set lookaheadMinutes to item 2 of argv as integer
       set nowDate to current date
       set endDate to nowDate + (lookaheadMinutes * minutes)
       set rows to {}
+      set fieldDelimiter to ASCII character 31
+      set rowDelimiter to ASCII character 30
       tell application "Calendar"
         repeat with cal in calendars
           set eventList to (every event of cal whose start date is greater than or equal to nowDate and start date is less than or equal to endDate)
           repeat with ev in eventList
-            set rowText to uid of ev & tab & summary of ev & tab & (start date of ev as «class isot» as string) & tab & (end date of ev as «class isot» as string) & tab & description of ev & tab & location of ev
+            set rowText to my safeText(uid of ev) & fieldDelimiter & my safeText(summary of ev) & fieldDelimiter & my isoDate(start date of ev) & fieldDelimiter & my isoDate(end date of ev) & fieldDelimiter & my safeText(description of ev) & fieldDelimiter & my safeText(location of ev)
             copy rowText to end of rows
-            if (count of rows) is greater than or equal to maxCount then return rows as string
+            if (count of rows) is greater than or equal to maxCount then exit repeat
           end repeat
+          if (count of rows) is greater than or equal to maxCount then exit repeat
         end repeat
       end tell
-      return rows as string
+      set oldDelimiters to AppleScript's text item delimiters
+      set AppleScript's text item delimiters to rowDelimiter
+      set outputText to rows as text
+      set AppleScript's text item delimiters to oldDelimiters
+      return outputText
     end run
     """
     result = subprocess.run(
@@ -112,8 +153,8 @@ def _list_macos_calendar_events(max_results: int = 5, lookahead_minutes: int | N
         detail = result.stderr.strip() or result.stdout.strip() or "osascript Calendar query failed"
         raise RuntimeError(detail)
     events = []
-    for line in result.stdout.splitlines():
-        parts = line.split("\t")
+    for line in result.stdout.strip().split("\x1e"):
+        parts = line.split("\x1f")
         if len(parts) < 6:
             continue
         events.append(
@@ -128,7 +169,7 @@ def _list_macos_calendar_events(max_results: int = 5, lookahead_minutes: int | N
                 "html_link": "",
             }
         )
-    return events[:max_results]
+    return _filter_upcoming(events, max_results=max_results, lookahead_minutes=lookahead_minutes)
 
 
 def _calendar_service():

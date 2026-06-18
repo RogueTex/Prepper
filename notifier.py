@@ -13,7 +13,7 @@ class NotificationError(RuntimeError):
 
 
 def send_sms(body: str, to_number: str | None = None) -> dict[str, Any]:
-    provider = os.getenv("NOTIFIER_PROVIDER", "twilio").strip().lower()
+    provider = os.getenv("NOTIFIER_PROVIDER", "console").strip().lower()
     if provider == "console":
         return _send_console(body, to_number=to_number)
     if provider == "macos":

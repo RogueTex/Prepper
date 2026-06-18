@@ -18,7 +18,7 @@ def main() -> None:
     failures: list[str] = []
     warnings: list[str] = []
 
-    provider = os.getenv("NOTIFIER_PROVIDER", "twilio").strip().lower()
+    provider = os.getenv("NOTIFIER_PROVIDER", "console").strip().lower()
     calendar_source = os.getenv("CALENDAR_SOURCE", "google_api").strip().lower()
     if provider not in REQUIRED_BY_PROVIDER:
         failures.append("NOTIFIER_PROVIDER must be one of: twilio, macos, console")

@@ -1,8 +1,10 @@
 # Prepper
 
+Codex Meetup POC, June 16, 2025.
+
 A local Flask microservice that syncs with Google Calendar, does a lightweight attendee/domain lookup, generates quick meeting prep notes with OpenAI, and can send those notes by SMS.
 
-Prepper is framed as a small Cursor meetup hackathon prototype: a personal "what should I know before this meeting?" assistant that runs on your laptop, keeps setup simple, and avoids storing private calendar content in the repo.
+Prepper is a small proof of concept for a personal "what should I know before this meeting?" assistant that runs on your laptop, keeps setup simple, and avoids storing private calendar content in the repo.
 
 This is designed to run locally. The sample data is synthetic, and private calendar events, OAuth tokens, phone numbers, generated briefs, and API keys should never be committed.
 
@@ -230,5 +232,6 @@ The lookup sends only the public domain, not meeting notes or attendee names.
 - Private iCal URLs belong only in `.env`, never in committed files.
 - Public examples use synthetic people, companies, emails, and domains only.
 - Domain lookup sends only public domains.
-- OpenAI inference receives the event payload you submit. Keep the app local and avoid sending sensitive descriptions or private notes unless you are comfortable using them for inference.
+- `REDACT_PRIVATE_DETAILS=true` is enabled by default for generated briefs and OpenAI payloads; it removes URLs, dial-in numbers, and full email addresses while preserving useful domains.
+- OpenAI inference receives a redacted event payload by default. Keep the app local and avoid sending sensitive descriptions or private notes unless you are comfortable using them for inference.
 - Do not paste real email threads, calendar invites, or private company names into committed sample files.

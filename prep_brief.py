@@ -8,6 +8,7 @@ import requests
 from dotenv import load_dotenv
 
 from lookup import enrich_event
+from privacy import attendee_email_domain, sanitize_event_for_model, sanitize_text
 
 
 load_dotenv()
@@ -31,7 +32,7 @@ def generate_brief(event: dict[str, Any]) -> tuple[str, str]:
 
 def _generate_with_openai(event: dict[str, Any], lookup_context: dict[str, Any], api_key: str) -> str:
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-    payload = {"event": event, "lookup_context": lookup_context}
+    payload = {"event": sanitize_event_for_model(event), "lookup_context": lookup_context}
     response = requests.post(
         "https://api.openai.com/v1/responses",
         headers={
@@ -87,7 +88,7 @@ def _generate_locally(
 ) -> str:
     title = event.get("title") or "Untitled meeting"
     start = event.get("start") or "Time not provided"
-    description = _compact(event.get("description") or "No description provided.", 240)
+    description = _compact(sanitize_text(event.get("description") or "No description provided."), 240)
     attendees = event.get("attendees") or []
     prior_context = event.get("prior_context") or []
     domain_profiles = lookup_context.get("domain_profiles") or []
@@ -127,10 +128,11 @@ def _format_attendees(attendees: list[Any]) -> str:
     lines = []
     for attendee in attendees:
         if isinstance(attendee, dict):
-            name = attendee.get("name") or attendee.get("email") or "Unknown attendee"
+            email_domain = attendee_email_domain(attendee)
+            name = attendee.get("name") or (f"person at {email_domain}" if email_domain else "") or "Unknown attendee"
             details = ", ".join(
                 str(part)
-                for part in [attendee.get("role"), attendee.get("company"), attendee.get("email")]
+                for part in [attendee.get("role"), attendee.get("company"), email_domain]
                 if part
             )
             lines.append(f"- {name}" + (f" ({details})" if details else ""))

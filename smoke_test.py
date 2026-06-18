@@ -49,6 +49,8 @@ def main() -> None:
         request_json = post.call_args.kwargs["json"]
         assert request_json["model"]
         assert request_json["input"][0]["role"] == "system"
+        assert "alex@example.com" not in json.dumps(request_json)
+        assert "email_domain" in json.dumps(request_json)
 
     print("smoke tests passed")
 
