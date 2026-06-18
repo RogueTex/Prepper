@@ -220,6 +220,12 @@ To automatically text prep notes for meetings coming up soon:
 python reminder_worker.py
 ```
 
+Run one local reminder pass and exit:
+
+```bash
+python reminder_worker.py --once --lookahead-minutes 120
+```
+
 Useful settings:
 
 ```bash

@@ -107,15 +107,35 @@ def run_probe(send_test_notification: bool = False) -> None:
             indent=2,
         )
     )
+    if not events:
+        print(json.dumps({"end_to_end": "skipped", "reason": "No upcoming events found."}, indent=2))
+        return
 
-    sample_event = json.loads(Path("sample_event.json").read_text(encoding="utf-8"))
-    brief, source = generate_brief(sample_event)
-    print(json.dumps({"brief_source": source, "brief_chars": len(brief)}, indent=2))
+    brief, source = generate_brief(events[0])
+    print(
+        json.dumps(
+            {
+                "end_to_end": "calendar_to_brief",
+                "brief_source": source,
+                "brief_chars": len(brief),
+            },
+            indent=2,
+        )
+    )
 
     provider = os.getenv("NOTIFIER_PROVIDER", "console").strip().lower()
     if provider == "console" or send_test_notification:
-        result = send_sms("Prepper setup probe: notification path is configured.")
-        print(json.dumps({"notification_status": result.get("status"), "notification_to": result.get("to")}, indent=2))
+        result = send_sms(f"Prepper setup probe\n\nPrep notes ({source})\n\n{brief}")
+        print(
+            json.dumps(
+                {
+                    "end_to_end": "calendar_to_brief_to_notification",
+                    "notification_status": result.get("status"),
+                    "notification_to": result.get("to"),
+                },
+                indent=2,
+            )
+        )
     else:
         print(
             json.dumps(
