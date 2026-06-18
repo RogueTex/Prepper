@@ -1,33 +1,92 @@
 # Calendar Prep Flask
 
-A small local Flask microservice that turns upcoming calendar events into quick meeting prep briefs.
+A local Flask microservice that syncs with Google Calendar, does a lightweight attendee/domain lookup, generates quick meeting prep notes with OpenAI, and can send those notes by SMS.
 
-It is intentionally simple: give it event metadata such as title, attendees, description, and start time, and it returns a concise brief with likely context, reminders, and useful questions to ask. I built this as a personal productivity tool so I can walk into calls with context instead of scrambling five minutes before.
+This is designed to run locally. The sample data is synthetic, and private calendar events, OAuth tokens, phone numbers, generated briefs, and API keys should never be committed.
 
 ## What It Does
 
-- Accepts meeting details through a JSON API.
-- Produces a short prep brief for each meeting.
-- Uses an OpenAI-compatible chat completion API when `OPENAI_API_KEY` is available.
-- Falls back to a deterministic local summarizer when no API key is configured.
-- Includes sample data so the service can be tried without wiring a real calendar.
+- Connects to Google Calendar with read-only OAuth.
+- Fetches upcoming meetings from your calendar.
+- Builds lightweight context from event metadata and optional public domain lookup.
+- Generates prep notes through the OpenAI Responses API when `OPENAI_API_KEY` is set.
+- Falls back to a deterministic local brief when no OpenAI key is configured.
+- Sends a selected prep note by SMS through Twilio.
+- Includes a reminder worker that can poll for upcoming meetings and text prep notes automatically.
 
 ## Quick Start
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+/Users/raghu/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3 -m venv .venv312
+source .venv312/bin/activate
 pip install -r requirements.txt
+cp .env.example .env
 python app.py
 ```
 
-Then open:
+Open:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-Generate a prep brief from the sample event:
+## Google Calendar Setup
+
+Create a Google Cloud OAuth client for a desktop app, download the client JSON, and save it locally as:
+
+```text
+credentials.json
+```
+
+Then set:
+
+```bash
+GOOGLE_CALENDAR_CREDENTIALS_FILE=credentials.json
+GOOGLE_CALENDAR_TOKEN_FILE=token.json
+GOOGLE_CALENDAR_ID=primary
+```
+
+The first calendar fetch opens a browser for OAuth consent and stores a local `token.json`. Both files are ignored by git.
+
+## OpenAI Setup
+
+Set:
+
+```bash
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-4.1-mini
+```
+
+The app uses the OpenAI Responses API for richer prep notes. Without an API key, the local fallback still works for demos and development.
+
+## SMS Setup
+
+Set Twilio credentials and your destination number:
+
+```bash
+TWILIO_ACCOUNT_SID=your_account_sid
+TWILIO_AUTH_TOKEN=your_auth_token
+TWILIO_FROM_NUMBER=+15555550123
+PREP_TO_NUMBER=+15555550124
+```
+
+Then use the web UI button or:
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/sms \
+  -H "Content-Type: application/json" \
+  -d '{"body":"Prep note test"}'
+```
+
+## API
+
+Fetch upcoming calendar events:
+
+```bash
+curl "http://127.0.0.1:5000/api/events?max_results=5"
+```
+
+Generate a brief from sample JSON:
 
 ```bash
 curl -X POST http://127.0.0.1:5000/api/brief \
@@ -35,56 +94,43 @@ curl -X POST http://127.0.0.1:5000/api/brief \
   -d @sample_event.json
 ```
 
-## Optional LLM Mode
-
-Create a `.env` file:
+Generate briefs for upcoming events:
 
 ```bash
-OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-4.1-mini
+curl -X POST "http://127.0.0.1:5000/api/brief/upcoming?max_results=3"
 ```
 
-The app will use the LLM for richer briefs. Without an API key, it still works locally with the fallback generator.
+## Reminder Worker
 
-## API
+To automatically text prep notes for meetings coming up soon:
 
-`POST /api/brief`
-
-```json
-{
-  "title": "Intro call with Harper",
-  "start": "2026-06-18T14:00:00-07:00",
-  "attendees": [
-    {
-      "name": "Dakotah Rice",
-      "email": "dr@example.com",
-      "company": "Harper",
-      "role": "Founder & CEO"
-    }
-  ],
-  "description": "First conversation for an FDE role.",
-  "prior_context": [
-    "Applied for Forward Deployed Engineer role.",
-    "Harper is building an AI-native commercial insurance brokerage."
-  ]
-}
+```bash
+python reminder_worker.py
 ```
 
-Response:
+Useful settings:
 
-```json
-{
-  "brief": "...",
-  "source": "local-fallback"
-}
+```bash
+DEFAULT_LOOKAHEAD_MINUTES=45
+REMINDER_POLL_SECONDS=300
 ```
 
-## Why This Exists
+The worker tracks sent event IDs in `briefs/sent_reminders.json`, which is ignored by git.
 
-The goal is not to replace a calendar. It is a tiny workflow tool that sits right before a meeting and answers:
+## Optional Lookup
 
-- Who am I meeting?
-- What is this probably about?
-- What context should I remember?
-- What are a few good questions to ask?
+By default, lookup only extracts non-personal attendee domains. To allow a small homepage metadata lookup for those domains:
 
+```bash
+ENABLE_DOMAIN_LOOKUP=true
+```
+
+The lookup sends only the public domain, not meeting notes or attendee names.
+
+## Privacy Guardrails
+
+- `.env`, `credentials.json`, `token.json`, and generated `briefs/` files are gitignored.
+- Public examples use synthetic people, companies, emails, and domains only.
+- Domain lookup sends only public domains.
+- OpenAI inference receives the event payload you submit. Keep the app local and avoid sending sensitive descriptions or private notes unless you are comfortable using them for inference.
+- Do not paste real email threads, calendar invites, or private company names into committed sample files.

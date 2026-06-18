@@ -1,19 +1,19 @@
 {
-  "title": "Intro call with Harper",
+  "title": "Product discovery call",
   "start": "2026-06-18T14:00:00-07:00",
+  "end": "2026-06-18T14:30:00-07:00",
   "attendees": [
     {
-      "name": "Dakotah Rice",
-      "email": "dr@example.com",
-      "company": "Harper",
-      "role": "Founder & CEO"
+      "name": "Alex Chen",
+      "email": "alex@example.com",
+      "company": "ExampleCo",
+      "role": "Product Lead"
     }
   ],
-  "description": "First conversation for an FDE role.",
+  "description": "Introductory call about a workflow automation project.",
   "prior_context": [
-    "Applied for Forward Deployed Engineer role.",
-    "Harper is building an AI-native commercial insurance brokerage.",
-    "They care about AI systems that work inside real operations."
+    "Discussed reducing manual prep work before recurring customer calls.",
+    "The team wants a lightweight tool that fits into existing calendar workflows.",
+    "The goal is a practical internal productivity helper rather than a standalone calendar app."
   ]
 }
-

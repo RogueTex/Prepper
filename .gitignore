@@ -1,6 +1,9 @@
 .venv/
+.venv312/
 __pycache__/
 .env
 .DS_Store
 *.pyc
-
+credentials.json
+token.json
+briefs/
