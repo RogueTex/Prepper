@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from unittest.mock import patch
 
 import app
@@ -9,6 +10,7 @@ import app
 
 def main() -> None:
     os.environ.pop("OPENAI_API_KEY", None)
+    os.environ["NOTIFIER_PROVIDER"] = "console"
     client = app.app.test_client()
 
     with open("sample_event.json", encoding="utf-8") as file:
@@ -21,8 +23,9 @@ def main() -> None:
     assert "Product discovery call" in brief_data["brief"]
 
     sms_response = client.post("/api/sms", json={"body": "Synthetic test brief"})
-    assert sms_response.status_code == 500
-    assert "Missing SMS config" in sms_response.get_json()["error"]
+    assert sms_response.status_code == 200
+    assert sms_response.get_json()["status"] == "written"
+    assert Path("outbox/latest_sms.txt").exists()
 
     events_response = client.get("/api/events?max_results=1")
     assert events_response.status_code == 500
@@ -52,4 +55,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

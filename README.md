@@ -12,6 +12,7 @@ This is designed to run locally. The sample data is synthetic, and private calen
 - Generates prep notes through the OpenAI Responses API when `OPENAI_API_KEY` is set.
 - Falls back to a deterministic local brief when no OpenAI key is configured.
 - Sends a selected prep note by SMS through Twilio.
+- Supports notification providers: `twilio`, `macos`, and `console`.
 - Includes a reminder worker that can poll for upcoming meetings and text prep notes automatically.
 
 ## Quick Start
@@ -61,12 +62,32 @@ The app uses the OpenAI Responses API for richer prep notes. Without an API key,
 
 ## SMS Setup
 
-Set Twilio credentials and your destination number:
+Pick a notifier:
 
 ```bash
+NOTIFIER_PROVIDER=console
+```
+
+Providers:
+
+- `console`: writes the latest "SMS" body to `outbox/latest_sms.txt`; good for dry-runs.
+- `twilio`: sends a real SMS through Twilio.
+- `macos`: sends through the local macOS Messages app, if Messages and SMS/iMessage routing are configured on your Mac.
+
+For Twilio, set:
+
+```bash
+NOTIFIER_PROVIDER=twilio
 TWILIO_ACCOUNT_SID=your_account_sid
 TWILIO_AUTH_TOKEN=your_auth_token
 TWILIO_FROM_NUMBER=+15555550123
+PREP_TO_NUMBER=+15555550124
+```
+
+For macOS Messages, set:
+
+```bash
+NOTIFIER_PROVIDER=macos
 PREP_TO_NUMBER=+15555550124
 ```
 
@@ -76,6 +97,32 @@ Then use the web UI button or:
 curl -X POST http://127.0.0.1:5000/api/sms \
   -H "Content-Type: application/json" \
   -d '{"body":"Prep note test"}'
+```
+
+## CLI
+
+Run a local setup check:
+
+```bash
+python doctor.py
+```
+
+Generate a brief from the synthetic sample:
+
+```bash
+python cli.py brief --event-file sample_event.json
+```
+
+Write the generated note through the configured notifier:
+
+```bash
+python cli.py brief --event-file sample_event.json --sms
+```
+
+List upcoming Google Calendar events:
+
+```bash
+python cli.py events --max-results 5
 ```
 
 ## API
