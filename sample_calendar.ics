@@ -1,0 +1,14 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Prepper//Synthetic Sample//EN
+BEGIN:VEVENT
+UID:sample-discovery-1@example.com
+DTSTAMP:20260618T190000Z
+DTSTART:20990618T210000Z
+DTEND:20990618T213000Z
+SUMMARY:Product discovery call
+DESCRIPTION:Introductory call about a workflow automation project.
+LOCATION:Video call
+ATTENDEE;CN=Alex Chen:mailto:alex@example.com
+END:VEVENT
+END:VCALENDAR

@@ -18,7 +18,7 @@ INDEX_HTML = """
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Calendar Prep</title>
+    <title>Prepper</title>
     <style>
       body {
         max-width: 880px;
@@ -67,7 +67,7 @@ INDEX_HTML = """
     </style>
   </head>
   <body>
-    <h1>Calendar Prep</h1>
+    <h1>Prepper</h1>
     <p>Fetch upcoming Google Calendar events or paste meeting JSON, then generate prep notes locally.</p>
 
     <button onclick="loadEvents()">Fetch Calendar Events</button>
